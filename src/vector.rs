@@ -2,6 +2,14 @@ use core::fmt;
 use num_traits::Float;
 use std::ops::{Add, Div, Mul, Sub};
 
+#[allow(dead_code)]
+pub enum VectorOp {
+    Add,
+    Sub,
+    Mul,
+    Div,
+}
+
 #[derive(Debug, PartialEq)]
 pub struct Vector<T>(pub Vec<T>);
 
@@ -116,14 +124,6 @@ where
             .join(", ");
         write!(f, "[{}]", elements)
     }
-}
-
-#[allow(dead_code)]
-pub enum VectorOp {
-    Add,
-    Sub,
-    Mul,
-    Div,
 }
 
 #[allow(dead_code)]

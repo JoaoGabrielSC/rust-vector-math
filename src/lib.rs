@@ -1,4 +1,4 @@
 // pub mod vector;
-pub mod enum_example;
+pub mod enums;
 pub mod point;
 pub mod vector;

@@ -1,5 +1,14 @@
 use core::fmt;
 
+#[allow(dead_code)]
+pub enum VectorOp {
+    Add,
+    Sub,
+    Mul,
+    Div,
+}
+
+// this will be used for another purpose later rsrsrs
 #[derive(Debug)]
 pub enum IpAddrKint {
     V4,
@@ -7,7 +16,6 @@ pub enum IpAddrKint {
 }
 
 impl fmt::Display for IpAddrKint {
-    // -> compilador : meu tipo IpAddrKint agora sabe como imprimir em formato humano
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             IpAddrKint::V4 => write!(f, "IpV4"),

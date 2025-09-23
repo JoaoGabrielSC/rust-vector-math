@@ -269,4 +269,34 @@ mod tests {
         let v = Vector(vec![1, 2, 3, 4]);
         assert_eq!(v.len(), 4);
     }
+
+    #[test]
+    fn it_should_return_norm_correctly() {
+        let v = Vector(vec![3.0, 4.0]);
+        let result = v.norm().unwrap();
+        assert_eq!(result, 5.0);
+    }
+
+    #[test]
+    fn it_should_return_unit_vector_correctly() {
+        let v = Vector(vec![3.0, 4.0]);
+        let result = v.unit_vect().unwrap();
+        assert_eq!(result, Vector(vec![0.6, 0.8]));
+    }
+
+    #[test]
+    fn it_should_return_scalar_projection_correctly() {
+        let a = Vector(vec![3.0, 4.0]);
+        let b = Vector(vec![1.0, 0.0]);
+        let result = a.scalar_projection(&b).unwrap();
+        assert_eq!(result, 3.0);
+    }
+
+    #[test]
+    fn it_should_return_error_for_unit_vector_of_zero_vector() {
+        let v = Vector(vec![0.0, 0.0]);
+        let result = v.unit_vect();
+        assert!(result.is_err());
+        assert_eq!(result.unwrap_err(), "Cannot normalize zero vector");
+    }
 }

@@ -85,6 +85,22 @@ where
 
         Ok(result)
     }
+
+    pub fn cosine_similarity(&self, other: &Self) -> Result<T, &'static str> {
+        if self.0.len() != other.0.len() {
+            return Err("Vectors must have the same length");
+        }
+
+        let dot = self.dot_product(other)?;
+        let norm_a = self.norm()?;
+        let norm_b = other.norm()?;
+
+        if norm_a == T::zero() || norm_b == T::zero() {
+            return Err("Cannot compute cosine similarity with zero vector");
+        }
+
+        Ok(dot / (norm_a * norm_b))
+    }
 }
 
 impl<T> fmt::Display for Vector<T>

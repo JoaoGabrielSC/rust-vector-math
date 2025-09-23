@@ -1,4 +1,5 @@
 use core::fmt;
+use num_traits::Float;
 use std::ops::{Add, Div, Mul, Sub};
 
 #[derive(Debug, PartialEq)]
@@ -29,15 +30,60 @@ where
         operate_vectors(&self.0, &other.0, VectorOp::Div)
     }
 
-    pub fn dot_product(&self, other: &Self) -> Result<T, &'static str>
-    where
-        T: Copy + Add<Output = T> + Mul<Output = T> + Default,
-    {
-        dot_prod(&self.0, &other.0)
-    }
-
     pub fn len(&self) -> usize {
         self.0.len()
+    }
+}
+
+impl<T> Vector<T>
+where
+    T: Float + fmt::Display,
+{
+    pub fn dot_product(&self, other: &Self) -> Result<T, &'static str> {
+        if self.0.len() != other.0.len() {
+            return Err("Vectors must have the same length");
+        }
+        let result = self
+            .0
+            .iter()
+            .zip(other.0.iter())
+            .fold(T::zero(), |acc, (&x, &y)| acc + x * y);
+
+        Ok(result)
+    }
+
+    pub fn norm(&self) -> Result<T, &'static str> {
+        if self.0.len() == 0 {
+            return Err("Vector must have at least one element");
+        }
+        let result = self.0.iter().fold(T::zero(), |acc, &x| acc + x * x);
+
+        Ok(result.sqrt())
+    }
+
+    pub fn unit_vect(&self) -> Result<Self, &'static str> {
+        if self.0.len() == 0 {
+            return Err("Vector must have at least one element");
+        }
+
+        let norm = self.norm()?;
+        if norm == T::zero() {
+            return Err("Cannot normalize zero vector");
+        }
+        let result = self.0.iter().map(|&x| x / norm).collect();
+
+        Ok(Vector(result))
+    }
+
+    pub fn scalar_projection(&self, other: &Self) -> Result<T, &'static str> {
+        if self.0.len() != other.0.len() {
+            return Err("Vectors must have the same length");
+        }
+
+        let b_unit = other.unit_vect()?;
+        let result = self.dot_product(&b_unit)?;
+
+        Ok(result)
     }
 }
 
@@ -125,23 +171,6 @@ where
             Ok(acc)
         })?;
     Ok(Vector(result))
-}
-
-pub fn dot_prod<T>(a: &[T], b: &[T]) -> Result<T, &'static str>
-where
-    T: Copy + Add<Output = T> + Mul<Output = T> + Default,
-{
-    if a.len() != b.len() {
-        return Err("Vectors must have the same length");
-    }
-
-    let result = a
-        .iter()
-        .zip(b.iter())
-        .map(|(x, y)| *x * *y)
-        .fold(T::default(), |acc, val| acc + val);
-
-    Ok(result)
 }
 
 #[cfg(test)]

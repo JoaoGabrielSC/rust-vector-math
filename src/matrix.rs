@@ -1,3 +1,5 @@
+use std::fmt;
+
 /// Simple Matrix type for numerical ops (f64)
 #[derive(Debug, Clone)]
 pub struct Matrix {
@@ -115,7 +117,7 @@ impl Matrix {
         tol: f64,
         max_iter: usize,
     ) -> Result<(Matrix, Vec<f64>, Matrix), &'static str> {
-        let ata = self.transpose().mul(self)?; // n x n
+        let ata = self.transpose().mul(self)?;
         let n = ata.rows;
         let mut ata_work = ata.data.clone();
 
@@ -198,5 +200,19 @@ impl Matrix {
         }
 
         Ok((u_mat, singular_values, v_t))
+    }
+}
+
+impl fmt::Display for Matrix {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for row in &self.data {
+            let row_str = row
+                .iter()
+                .map(|x| format!("{:8.4}", x))
+                .collect::<Vec<_>>()
+                .join(" ");
+            writeln!(f, "[{}]", row_str)?;
+        }
+        Ok(())
     }
 }

@@ -23,21 +23,26 @@ where
         + Default
         + PartialEq,
 {
+    #[allow(dead_code)]
     pub fn add(&self, other: &Self) -> Result<Self, &'static str> {
         operate_vectors(&self.0, &other.0, VectorOp::Add)
     }
+
+    #[allow(dead_code)]
     pub fn sub(&self, other: &Self) -> Result<Self, &'static str> {
         operate_vectors(&self.0, &other.0, VectorOp::Sub)
     }
-
+    #[allow(dead_code)]
     pub fn mul(&self, other: &Self) -> Result<Self, &'static str> {
         operate_vectors(&self.0, &other.0, VectorOp::Mul)
     }
 
+    #[allow(dead_code)]
     pub fn div(&self, other: &Self) -> Result<Self, &'static str> {
         operate_vectors(&self.0, &other.0, VectorOp::Div)
     }
 
+    #[allow(dead_code)]
     pub fn len(&self) -> usize {
         self.0.len()
     }
@@ -47,6 +52,7 @@ impl<T> Vector<T>
 where
     T: Float + fmt::Display,
 {
+    #[allow(dead_code)]
     pub fn dot_product(&self, other: &Self) -> Result<T, &'static str> {
         if self.0.len() != other.0.len() {
             return Err("Vectors must have the same length");
@@ -60,6 +66,7 @@ where
         Ok(result)
     }
 
+    #[allow(dead_code)]
     pub fn norm(&self) -> Result<T, &'static str> {
         if self.0.len() == 0 {
             return Err("Vector must have at least one element");
@@ -69,6 +76,7 @@ where
         Ok(result.sqrt())
     }
 
+    #[allow(dead_code)]
     pub fn unit_vect(&self) -> Result<Self, &'static str> {
         if self.0.len() == 0 {
             return Err("Vector must have at least one element");
@@ -83,6 +91,7 @@ where
         Ok(Vector(result))
     }
 
+    #[allow(dead_code)]
     pub fn scalar_projection(&self, other: &Self) -> Result<T, &'static str> {
         if self.0.len() != other.0.len() {
             return Err("Vectors must have the same length");
@@ -94,6 +103,7 @@ where
         Ok(result)
     }
 
+    #[allow(dead_code)]
     pub fn cosine_similarity(&self, other: &Self) -> Result<T, &'static str> {
         if self.0.len() != other.0.len() {
             return Err("Vectors must have the same length");

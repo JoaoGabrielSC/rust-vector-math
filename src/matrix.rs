@@ -12,17 +12,18 @@ impl Matrix {
             return Err("Matrix cannot be empty");
         }
         let cols = data[0].len();
-        for r in &data {
-            if r.len() != cols {
-                return Err("All rows must have the same number of columns");
-            }
+        if !data.iter().all(|r| r.len() == cols) {
+            return Err("All rows must have the same number of columns");
         }
-        let rows = data.len();
-        Ok(Matrix { data, rows, cols })
+        Ok(Matrix {
+            rows: data.len(),
+            cols,
+            data,
+        })
     }
 
     pub fn zeros(rows: usize, cols: usize) -> Self {
-        Matrix {
+        Self {
             data: vec![vec![0.0; cols]; rows],
             rows,
             cols,
@@ -63,33 +64,50 @@ impl Matrix {
         })
     }
 
-    pub fn mul_vec(&self, v: &Vec<f64>) -> Result<Vec<f64>, &'static str> {
+    pub fn mul_vec(&self, v: &[f64]) -> Result<Vec<f64>, &'static str> {
         if self.cols != v.len() {
             return Err("Incompatible shapes for matrix-vector multiplication");
         }
-        let mut out = vec![0.0; self.rows];
-        for i in 0..self.rows {
-            let mut s = 0.0;
-            for j in 0..self.cols {
-                s += self.data[i][j] * v[j];
-            }
-            out[i] = s;
-        }
-        Ok(out)
+        Ok(self
+            .data
+            .iter()
+            .map(|row| row.iter().zip(v).map(|(a, b)| a * b).sum())
+            .collect())
     }
 
     pub fn col(&self, idx: usize) -> Vec<f64> {
         (0..self.rows).map(|r| self.data[r][idx]).collect()
     }
 
-    pub fn set_col(&mut self, idx: usize, col: &Vec<f64>) -> Result<(), &'static str> {
+    pub fn set_col(&mut self, idx: usize, col: &[f64]) -> Result<(), &'static str> {
         if col.len() != self.rows {
             return Err("Column length mismatch");
         }
-        for r in 0..self.rows {
-            self.data[r][idx] = col[r];
+        for (r, val) in col.iter().enumerate() {
+            self.data[r][idx] = *val;
         }
         Ok(())
+    }
+
+    fn normalize(v: &mut Vec<f64>) -> f64 {
+        let norm = v.iter().map(|x| x * x).sum::<f64>().sqrt();
+        if norm > 0.0 {
+            for val in v.iter_mut() {
+                *val /= norm;
+            }
+        }
+        norm
+    }
+
+    fn mat_vec_mul(m: &[Vec<f64>], v: &[f64]) -> Vec<f64> {
+        m.iter()
+            .map(|row| row.iter().zip(v).map(|(a, b)| a * b).sum())
+            .collect()
+    }
+
+    fn rayleigh_quotient(m: &[Vec<f64>], v: &[f64]) -> f64 {
+        let mv = Self::mat_vec_mul(m, v);
+        v.iter().zip(mv.iter()).map(|(vi, mvi)| vi * mvi).sum()
     }
 
     pub fn svd(
@@ -97,48 +115,26 @@ impl Matrix {
         tol: f64,
         max_iter: usize,
     ) -> Result<(Matrix, Vec<f64>, Matrix), &'static str> {
-        let a_t = self.transpose();
-        let ata = a_t.mul(self)?; // n x n
+        let ata = self.transpose().mul(self)?; // n x n
         let n = ata.rows;
         let mut ata_work = ata.data.clone();
-        let mut eigvals: Vec<f64> = Vec::new();
-        let mut eigvecs: Vec<Vec<f64>> = Vec::new();
 
-        for k in 0..n {
+        let mut eigvals = Vec::new();
+        let mut eigvecs = Vec::new();
+
+        for _ in 0..n {
             let mut b_k = vec![1.0; n];
-            let mut norm = b_k.iter().map(|x| x * x).sum::<f64>().sqrt();
-            if norm == 0.0 {
+            if Self::normalize(&mut b_k) == 0.0 {
                 break;
             }
-            for v in b_k.iter_mut() {
-                *v /= norm;
-            }
+
             let mut lambda = 0.0;
             for _ in 0..max_iter {
-                let mut b_next = vec![0.0; n];
-                for i in 0..n {
-                    let mut s = 0.0;
-                    for j in 0..n {
-                        s += ata_work[i][j] * b_k[j];
-                    }
-                    b_next[i] = s;
-                }
-                let norm_bnext = b_next.iter().map(|x| x * x).sum::<f64>().sqrt();
-                if norm_bnext == 0.0 {
+                let mut b_next = Self::mat_vec_mul(&ata_work, &b_k);
+                if Self::normalize(&mut b_next) == 0.0 {
                     break;
                 }
-                for v in b_next.iter_mut() {
-                    *v /= norm_bnext;
-                }
-                let mut num = 0.0;
-                for i in 0..n {
-                    let mut s = 0.0;
-                    for j in 0..n {
-                        s += ata_work[i][j] * b_next[j];
-                    }
-                    num += b_next[i] * s;
-                }
-                let lambda_next = num;
+                let lambda_next = Self::rayleigh_quotient(&ata_work, &b_next);
                 if (lambda_next - lambda).abs() < tol {
                     lambda = lambda_next;
                     b_k = b_next;
@@ -147,11 +143,14 @@ impl Matrix {
                 lambda = lambda_next;
                 b_k = b_next;
             }
+
             if lambda.abs() < 1e-12 {
                 break;
             }
+
             eigvals.push(lambda);
             eigvecs.push(b_k.clone());
+
             for i in 0..n {
                 for j in 0..n {
                     ata_work[i][j] -= lambda * b_k[i] * b_k[j];
@@ -159,18 +158,19 @@ impl Matrix {
             }
         }
 
-        let mut singular_values: Vec<f64> = eigvals
+        let singular_values: Vec<f64> = eigvals
             .iter()
             .map(|&x| if x > 0.0 { x.sqrt() } else { 0.0 })
             .collect();
-
         let r = singular_values.len();
         if r == 0 {
-            // all zeros
-            let u = Matrix::zeros(self.rows, self.rows);
-            let v_t = Matrix::zeros(0, 0);
-            return Ok((u, vec![], v_t));
+            return Ok((
+                Matrix::zeros(self.rows, self.rows),
+                vec![],
+                Matrix::zeros(0, 0),
+            ));
         }
+
         let mut v_mat = Matrix::zeros(n, r);
         for (j, vecj) in eigvecs.iter().enumerate() {
             v_mat.set_col(j, vecj)?;
@@ -178,17 +178,17 @@ impl Matrix {
 
         let av = self.mul(&v_mat)?;
         let mut u_mat = Matrix::zeros(self.rows, r);
-        for j in 0..r {
-            let sigma = singular_values[j];
-            if sigma.abs() < 1e-12 {
-                u_mat.set_col(j, &vec![0.0; self.rows])?;
+        for (j, sigma) in singular_values.iter().enumerate() {
+            let col_aj = av.col(j);
+            let col = if sigma.abs() < 1e-12 {
+                vec![0.0; self.rows]
             } else {
-                let col_aj = av.col(j);
-                let scaled: Vec<f64> = col_aj.iter().map(|x| x / sigma).collect();
-                u_mat.set_col(j, &scaled)?;
-            }
+                col_aj.iter().map(|x| x / sigma).collect()
+            };
+            u_mat.set_col(j, &col)?;
         }
 
+        // Build V^T
         let mut v_t = Matrix::zeros(r, n);
         for j in 0..r {
             let vj = v_mat.col(j);
